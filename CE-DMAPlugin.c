@@ -2,7 +2,6 @@
 //#define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 // Windows Header Files:
 
-
 #include <windows.h>
 #include <stdio.h>
 #include "cepluginsdk.h"
@@ -30,14 +29,11 @@ PVOID pProcess32Next;
 PVOID pModule32First;
 PVOID pModule32Next;
 
-
-
 void __stdcall mainmenuplugin(void)
 {
 	Exported.ShowMessage("Main menu plugin");
 	return;
 }
-
 
 BOOL __stdcall CEPlugin_GetVersion(PPluginVersion pv, int sizeofpluginversion)
 {
@@ -54,7 +50,6 @@ BOOL __stdcall CEPlugin_GetVersion(PPluginVersion pv, int sizeofpluginversion)
 }*/
 
 void hookFunctions() {
-
 	pOpenProcess = *(PVOID*)Exported.OpenProcess;
 	pIsWow64Process = *(PVOID*)Exported.IsWow64Process;
 	pReadProcessMemory = *(CEP_READPROCESSMEMORY*)Exported.ReadProcessMemory;
@@ -93,11 +88,14 @@ void unhookFunctions() {
 	*(PVOID*)Exported.Module32First = pModule32First;
 	*(PVOID*)Exported.Module32Next = pModule32Next;
 }
+
 BOOL __stdcall CEPlugin_InitializePlugin(PExportedFunctions ef , int pluginid)
 {
 	MAINMENUPLUGIN_INIT init0;
 	
-	hVMM = VMMDLL_Initialize(3, (LPSTR[]) { "", "-device", "fpga" });
+	// 【修改核心】：将物理 FPGA 修改为 vmware，并修复了 C++ 数组强制转换的语法规范以防编译报错
+	LPSTR args[] = { (LPSTR)"", (LPSTR)"-device", (LPSTR)"vmware" };
+	hVMM = VMMDLL_Initialize(3, args);
 
 	selfid=pluginid;
 
@@ -107,7 +105,6 @@ BOOL __stdcall CEPlugin_InitializePlugin(PExportedFunctions ef , int pluginid)
 		return FALSE;
 
 	hookFunctions();
-
 
 	init0.name="DMAPlugin -- kaijia2024";
 	init0.callbackroutine=mainmenuplugin;
@@ -123,15 +120,13 @@ BOOL __stdcall CEPlugin_InitializePlugin(PExportedFunctions ef , int pluginid)
 
 	//lua_register(lua_state, "pluginExample", lua_pluginExample);
 
-	Exported.ShowMessage("The \"DMA\" plugin got enabled");
+	Exported.ShowMessage("The VMware DMA plugin got enabled successfully!"); // 改了一下成功提示，方便你确认插件加载对了
 	
 	return TRUE;
 }
 
-
 BOOL __stdcall CEPlugin_DisablePlugin(void)
 {
-
 	VMMDLL_MemFree(pProcInfoAll);
 	VMMDLL_MemFree(pmModule);
 	VMMDLL_MemFree(pVadMap);
